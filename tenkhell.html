@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Math Quiz & Riddle Game</title>
+<style>
+body{font-family:Arial; background:#1b263b; color:white; text-align:center; margin:0; padding:0;}
+header{background:#0d1b2a; padding:15px;}
+.designer{color:#ffd166;}
+.container{width:90%; max-width:480px; margin:20px auto; background:#415a77; padding:20px; border-radius:12px;}
+button{padding:12px 20px; margin:6px; border:none; border-radius:8px; background:#ffd166; cursor:pointer; font-weight:bold; font-size:1rem;}
+input{padding:10px; margin:8px; font-size:1rem; width:80%; max-width:300px; border-radius:6px; border:none;}
+.timer{color:#ff6b6b; font-size:1.2rem;}
+.leaderboard{margin-top:20px; background:#0d1b2a; padding:10px; border-radius:8px;}
+#options button{display:block; width:80%; margin:8px auto;}
+img{width:150px; height:150px; margin-top:10px;}
+</style>
+</head>
+<body>
+
+<header>
+<h1>Math Quiz & Riddle Game 🎮</h1>
+<p class="designer">Designed by 12 Sci B</p>
+</header>
+
+<div class="container" id="nameScreen">
+<h2>Enter Your Name to Start</h2>
+<input type="text" id="playerName" placeholder="Your Name">
+<br>
+<button onclick="startGameName()">Start Game</button>
+</div>
+
+<div class="container" id="gameScreen" style="display:none;">
+<p class="timer">Time: <span id="time">90</span>s</p>
+<p>Score: <span id="score">0</span></p>
+<p id="question"></p>
+<div id="options"></div>
+<p id="result"></p>
+
+<div class="leaderboard">
+<h3>🏆 Leaderboard</h3>
+<ol id="board"></ol>
+<button onclick="resetLeaderboard()">Reset Leaderboard</button>
+</div>
+
+<h3>📱 Scan to Play</h3>
+<img id="qr">
+</div>
+
+<script>
+let score=0, time=60, timer, currentQ=0, playerName='';
+let questions=[
+{q:"What is 44+99?", options:["142","145","143","139"], answer:"143"},
+{q:"Which is prime?", options:["4","6","7","9"], answer:"7"},
+{q:"Riddle: I am an odd number. Take away 1 and I become even. Who am I?", options:["7","9","11","5"], answer:"7"},
+{q:"12 × 2 = ?", options:["22","24","26","20"], answer:"24"},
+{q:"Riddle: Divide 30 by 1/2 and add 10. What is the result?", options:["70","50","25","60"], answer:"70"},
+{q:"Solve: 2x + 5 = 17", options:["5","6","12","7"], answer:"6"},
+{q:"What is 15 ÷ 3?", options:["4","5","6","3"], answer:"5"},
+{q:"Riddle: I have keys but no locks. What am I?", options:["Map","Piano","Book","Clock"], answer:"Piano"},
+{q:"Which number is both square and cube?", options:["64","16","27","8"], answer:"64"},
+{q:"7 × 6 = ?", options:["42","36","48","40"], answer:"42"},
+{q:"Riddle: The more you take, the more you leave behind. What am I?", options:["Footsteps","Shadow","Time","Water"], answer:"Footsteps"},
+{q:"What is 9 - 4?", options:["5","6","7","4"], answer:"5"},
+{q:"Solve: 3x = 21", options:["6","7","8","9"], answer:"7"},
+{q:"Riddle: I am a three-digit number. My tens digit is five more than my ones digit, hundreds digit is 8 less than tens digit. Who am I?", options:["261","273","194","352"], answer:"261"},
+{q:"If x² = 81, what is x?", options:["9","-9","Both","3"], answer:"Both"}
+];
+
+const correctSound=new Audio("https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg");
+const wrongSound=new Audio("https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg");
+
+function startGameName(){
+playerName=document.getElementById("playerName").value.trim();
+if(playerName===''){alert("Please enter your name!"); return;}
+document.getElementById("nameScreen").style.display='none';
+document.getElementById("gameScreen").style.display='block';
+startGame();
+}
+
+function startGame(){
+score=0;
+time=60;
+currentQ=0;
+document.getElementById("score").innerText=score;
+document.getElementById("time").innerText=time;
+questions = questions.slice(); // copy original questions
+clearInterval(timer);
+timer=setInterval(()=>{
+time--;
+document.getElementById("time").innerText=time;
+if(time<=0){
+clearInterval(timer);
+endGame();
+}
+},1000);
+showQuestion();
+}
+
+function showQuestion(){
+if(questions.length==0) return;
+currentQ=Math.floor(Math.random()*questions.length);
+let q=questions[currentQ];
+document.getElementById("question").innerText=q.q;
+let optHTML="";
+q.options.forEach(opt=>{
+optHTML+=`<button onclick="checkAnswer('${opt}')">${opt}</button>`;
+});
+document.getElementById("options").innerHTML=optHTML;
+document.getElementById("result").innerText="";
+}
+
+function checkAnswer(ans){
+let q=questions[currentQ];
+if(ans===q.answer){
+score+=10;
+correctSound.play();
+document.getElementById("result").innerText="Correct!";
+}else{
+wrongSound.play();
+document.getElementById("result").innerText="Wrong! Answer: "+q.answer;
+}
+document.getElementById("score").innerText=score;
+questions.splice(currentQ,1);
+setTimeout(showQuestion,600);
+}
+
+function endGame(){
+clearInterval(timer);
+document.getElementById("question").innerText="Game Over! Final Score: "+score;
+document.getElementById("options").innerHTML="";
+let board=JSON.parse(localStorage.getItem("mathboard"))||[];
+board.push({name:playerName,score});
+board.sort((a,b)=>b.score-a.score);
+board=board.slice(0,5);
+localStorage.setItem("mathboard",JSON.stringify(board));
+showBoard();
+}
+
+function showBoard(){
+let board=JSON.parse(localStorage.getItem("mathboard"))||[];
+let html="";
+board.forEach(p=>{html+="<li>"+p.name+" - "+p.score+"</li>";});
+document.getElementById("board").innerHTML=html;
+}
+
+// RESET leaderboard
+function resetLeaderboard(){
+if(confirm("Are you sure you want to reset the leaderboard?")){
+  localStorage.removeItem("mathboard");
+  showBoard();
+}
+}
+
+// Generate QR code for mobile play
+document.getElementById("qr").src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data="+encodeURIComponent(location.href);
+
+showBoard();
+</script>
+</body>
+</html>
